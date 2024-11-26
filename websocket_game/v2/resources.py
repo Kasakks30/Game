@@ -98,17 +98,9 @@ class Home(Namespace):
                 emit('move_response', {'board': board, 'message': "You are not in this game room."})
                 return
 
-        # if (current_player == 'O' and user_email != players[room_code][0]) or \
-        #         (current_player == 'X' and user_email != players[room_code][1]):
-        #     emit('move_response', {'board': board, 'message': "It's not your turn."})
-        #     return
-
         if board[index] == "":
             board[index] = current_player
             winner = check_winner(board)
-            # redis_data_json = redis_client.get(user_email)
-            # if redis_data_json:
-            #     redis_data = json.loads(redis_data_json)
 
             redis_key = f"game_board:{room_code}"
             redis_data = redis_client.get(redis_key)
@@ -121,15 +113,6 @@ class Home(Namespace):
             redis_json_data = json.dumps(redis_data)
             redis_client.set(redis_key, redis_json_data)
             load_data = redis_data['positions'][-1]
-            # redis_data = {"positions": []}
-            # redis_json_data= json.dumps(redis_data)
-            # redis_client.set("data_positions",redis_json_data)
-            # redis_data['positions'].append(board)
-            # redis_data = redis_client['data_positions']
-            # cache_data = redis_client.set(user_email, json.dumps(redis_data))
-            # print("redis data is: ", redis_data['position'])
-            # emit('load_data',{'position':redis_data['position']})
-            # emit('load_data',cache_data['position'],room=room_code,broadcast=True)
             emit('move_response', {'board': board}, room=room_code, broadcast=True)
             emit("load_data", {"redis_key": load_data}, room=room_code, broadcast=True)
 
@@ -137,26 +120,15 @@ class Home(Namespace):
                 message = f"Player {name} wins!"
                 board = [''] * 9
                 redis_client.delete(redis_key)
-                # redis_client['data_positions'] = []
-                # redis_client.set('data_positions',[])
-                # emit('move_response', {'board': board, 'message': message,'position':[]}, room=room_code, broadcast=True)
                 emit('game_over', {'message': message}, room=room_code, broadcast=True)
 
             elif "" not in board:
                 message = "It's a draw!"
                 board = [''] * 9
                 redis_client.delete(redis_key)
-                # redis_client['data_positions'] = []
-                # redis_client.set('data_positions',[])
-                # emit('move_response', {'board': board, 'message': message,'position':[]}, room=room_code, broadcast=True)
                 emit('game_over', {'message': message}, room=room_code, broadcast=True)
             else:
                 message = None
-            # redis_data_json = redis_client.get(user_email)
-            # if redis_data_json:
-            #     redis_data = json.loads(redis_data_json)
-            # emit('load_data', redis_data['position'], room=room_code)
-            # emit('move_response', {'board': board}, room=room_code, broadcast=True)
 
     def on_load_page(self, data):
         # global board
@@ -165,64 +137,15 @@ class Home(Namespace):
         redis_data = redis_client.get(redis_key)
         if redis_data:
             redis_load = json.loads(redis_data)['positions'][-1]
-            # winner = check_winner(board)
-            # if winner:
-            #     board=[' ']*9
-            #     redis_client.delete(redis_key)
-            # elif "" not in board:
-            #     board = [''] * 9
-            #     redis_client.delete(redis_key)
             emit("load_data", {"redis_key": redis_load}, broadcast=True)
-        # else:
-        #     pass
 
     def on_connect(self, auth):
-        # redis_client.delete(redis_key)
         global players, rooms, redis_data
         room_code = request.args.get("room_code")
         user_email = request.args.get("user_email")
         cursor = mysql.connection.cursor()
         cursor.execute('SELECT user_nme FROM game_table WHERE user_email = %s', (user_email,))
         db_data = cursor.fetchone()
-        # if room_code not in rooms:
-        #     rooms[room_code] = {"members": []}
-
-        # if len(rooms[room_code]["members"]) > 4:
-        #     emit('game_over', {'message': 'Room is full.'})
-        #     return
-        # if room_code not in rooms:
-        # redis_data_json = redis_client.get(user_email)
-        # if redis_data_json:
-        #     redis_data = json.loads(redis_data_json)
-        #     print("your positions are: ", redis_data['position'])
-        #     print("your value is: ", redis_data['value'])
-        #     emit('load_data', {'position': redis_data['position']})
-        # else:
-        #     try:
-        #         if len(rooms[room_code]['members'])<=2:
-        #             print(rooms)
-        #             player_mark = 'O' if len(rooms[room_code]["members"]) == 0 else 'X'
-        #             redis_data = {"positions":[]}
-        #             redis_json_data= json.dumps(redis_data)
-        #             redis_client.set("data_positions",redis_json_data)
-        # emit("load_data",{"redis_data":redis_client})
-        # redis_data = {
-        #     "value": player_mark,
-        #     "position": []
-        # }
-        # redis_data_json = json.dumps(redis_data)
-        # redis_client.set(user_email, redis_data_json)
-        # print("redis json data is: ",redis_data_json)
-        # redis_list=[]
-        # redis_list.append(user_email)
-        # print("redis listt isss:::",redis_list)
-        # redis_client.set("user_data",redis_list)
-        # else:
-        #     redis_data_json = redis_client.get(user_email)
-        #     if redis_data_json:
-        #         redis_data = json.loads(redis_data_json)
-        #     print("your alllllllllllll positions are: ", redis_data['position'])
-        #     emit('load_data',{'position':redis_data['position']},room=room_code,broadcast=True)
         try:
             name = db_data[0]
             join_room(room_code)
@@ -232,33 +155,6 @@ class Home(Namespace):
             send({"message": f"{name} joined the room"}, to=room_code)
         except Exception as e:
             return str(e)
-
-            # except Exception as e:
-            #     print(e)
-
-
-# jwt = JWTManager(app)
-#
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     if request.method == 'POST':
-#         data = eval(request.data)
-#         username = data['username']
-#         password = data['password']
-#
-#         cur = mysql.connection.cursor()
-#         cur.execute('SELECT * FROM users WHERE name = %s', (username,))
-#         user = cur.fetchone()
-#         cur.close()
-#
-#         if user and user[3] == password:
-#             access_token = create_access_token(identity=username)
-#             # return jsonify(access_token=access_token)
-#             return {'msg': 'success', 'access_token': access_token}, 200
-#         else:
-#             return jsonify({"msg": "Invalid credentials"}), 401
-#
-#     return render_template('login.html')
 
 
 class Disconnect(Resource):
